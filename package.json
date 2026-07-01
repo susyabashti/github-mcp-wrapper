@@ -1,6 +1,6 @@
 {
   "name": "@susyabashti/github-mcp-wrapper",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "module": "src/index.ts",
   "type": "module",
   "main": "src/index.ts",
