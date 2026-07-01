@@ -6,6 +6,7 @@
 // and execs it over stdio.
 
 import { createPrivateKey, createSign } from "crypto";
+import { join } from "path";
 
 const { GITHUB_APP_ID, GITHUB_PRIVATE_KEY, GITHUB_INSTALLATION_ID } = Bun.env;
 
@@ -16,8 +17,34 @@ if (!GITHUB_APP_ID || !GITHUB_PRIVATE_KEY || !GITHUB_INSTALLATION_ID) {
   process.exit(1);
 }
 
-function buildAppJwt(appId: string, privateKeyPem: string): string {
-  const privateKey = createPrivateKey({ key: privateKeyPem, format: "pem" });
+async function resolvePrivateKey(input: string): Promise<string> {
+  const trimmed = input.trim();
+
+  try {
+    const resolvedPath = trimmed.startsWith("~/")
+      ? join(Bun.env.HOME || "", trimmed.slice(2))
+      : trimmed;
+
+    const file = Bun.file(resolvedPath);
+    if (await file.exists()) {
+      const content = await file.text();
+      return content.trim();
+    }
+  } catch {
+    // If file checks throw, fall through to treat it as a raw string
+  }
+
+  let formattedKey = trimmed.replace(/\\n/g, "\n");
+
+  if (!formattedKey.includes("-----BEGIN")) {
+    formattedKey = `-----BEGIN RSA PRIVATE KEY-----\n${formattedKey}\n-----END RSA PRIVATE KEY-----`;
+  }
+
+  return formattedKey;
+}
+
+function buildAppJwt(appId: string, pemKey: string): string {
+  const privateKey = createPrivateKey({ key: pemKey, format: "pem" });
 
   const now = Math.floor(Date.now() / 1000);
   const headerB64 = Buffer.from(
@@ -84,7 +111,8 @@ function installTokenIntoEnv(token: string): void {
 }
 
 async function main() {
-  const jwt = buildAppJwt(GITHUB_APP_ID!, GITHUB_PRIVATE_KEY!);
+  const pemKey = await resolvePrivateKey(GITHUB_PRIVATE_KEY!);
+  const jwt = buildAppJwt(GITHUB_APP_ID!, pemKey);
 
   let token: string;
   try {
