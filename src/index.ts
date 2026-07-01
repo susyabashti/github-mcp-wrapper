@@ -1,3 +1,4 @@
+#!/usr/bin/env bun
 // github-mcp-wrapper.ts
 //
 // Exchanges a GitHub App private key for a short-lived installation token,
