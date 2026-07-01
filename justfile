@@ -31,8 +31,8 @@ release bump="patch": check
     fi
 
     current_branch=$(git branch --show-current)
-    if [[ "$current_branch" != "main" ]]; then
-      echo "Not on main (currently on $current_branch) — aborting." >&2
+    if [[ "$current_branch" != "dev" ]]; then
+      echo "Not on dev (currently on $current_branch) — aborting." >&2
       exit 1
     fi
 
